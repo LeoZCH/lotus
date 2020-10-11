@@ -262,11 +262,6 @@ func UpgradeFaucetBurnRecovery(ctx context.Context, sm *StateManager, cb ExecCal
 		return cid.Undef, xerrors.Errorf("loading state tree failed: %w", err)
 	}
 
-	ReserveAddress, err := address.NewFromString("t090")
-	if err != nil {
-		return cid.Undef, xerrors.Errorf("failed to parse reserve address: %w", err)
-	}
-
 	tree, err := sm.StateTree(root)
 	if err != nil {
 		return cid.Undef, xerrors.Errorf("getting state tree: %w", err)
@@ -292,7 +287,7 @@ func UpgradeFaucetBurnRecovery(ctx context.Context, sm *StateManager, cb ExecCal
 			if !sysAcc {
 				transfers = append(transfers, transfer{
 					From: addr,
-					To:   ReserveAddress,
+					To:   builtin.ReserveAddress,
 					Amt:  act.Balance,
 				})
 			}
@@ -316,7 +311,7 @@ func UpgradeFaucetBurnRecovery(ctx context.Context, sm *StateManager, cb ExecCal
 
 			transfers = append(transfers, transfer{
 				From: addr,
-				To:   ReserveAddress,
+				To:   builtin.ReserveAddress,
 				Amt:  available,
 			})
 		}
@@ -367,7 +362,7 @@ func UpgradeFaucetBurnRecovery(ctx context.Context, sm *StateManager, cb ExecCal
 			nbalance := big.Min(prevBalance, AccountCap)
 			if nbalance.Sign() != 0 {
 				transfersBack = append(transfersBack, transfer{
-					From: ReserveAddress,
+					From: builtin.ReserveAddress,
 					To:   addr,
 					Amt:  nbalance,
 				})
@@ -394,7 +389,7 @@ func UpgradeFaucetBurnRecovery(ctx context.Context, sm *StateManager, cb ExecCal
 
 			mfunds := minerFundsAlloc(power, totalPower)
 			transfersBack = append(transfersBack, transfer{
-				From: ReserveAddress,
+				From: builtin.ReserveAddress,
 				To:   minfo.Worker,
 				Amt:  mfunds,
 			})
@@ -414,7 +409,7 @@ func UpgradeFaucetBurnRecovery(ctx context.Context, sm *StateManager, cb ExecCal
 
 				if lbsectors.Length() > 0 {
 					transfersBack = append(transfersBack, transfer{
-						From: ReserveAddress,
+						From: builtin.ReserveAddress,
 						To:   minfo.Worker,
 						Amt:  BaseMinerBalance,
 					})
@@ -441,7 +436,7 @@ func UpgradeFaucetBurnRecovery(ctx context.Context, sm *StateManager, cb ExecCal
 	if err != nil {
 		return cid.Undef, xerrors.Errorf("failed to load burnt funds actor: %w", err)
 	}
-	if err := doTransfer(cb, tree, builtin0.BurntFundsActorAddr, ReserveAddress, burntAct.Balance); err != nil {
+	if err := doTransfer(cb, tree, builtin0.BurntFundsActorAddr, builtin.ReserveAddress, burntAct.Balance); err != nil {
 		return cid.Undef, xerrors.Errorf("failed to unburn funds: %w", err)
 	}
 
@@ -457,7 +452,7 @@ func UpgradeFaucetBurnRecovery(ctx context.Context, sm *StateManager, cb ExecCal
 	}
 
 	difference := types.BigSub(DesiredReimbursementBalance, reimb.Balance)
-	if err := doTransfer(cb, tree, ReserveAddress, reimbAddr, difference); err != nil {
+	if err := doTransfer(cb, tree, builtin.ReserveAddress, reimbAddr, difference); err != nil {
 		return cid.Undef, xerrors.Errorf("failed to top up reimbursement account: %w", err)
 	}
 
@@ -542,12 +537,7 @@ func UpgradeRefuel(ctx context.Context, sm *StateManager, cb ExecCallback, root 
 		return cid.Undef, xerrors.Errorf("getting state tree: %w", err)
 	}
 
-	addr, err := address.NewFromString("t0122")
-	if err != nil {
-		return cid.Undef, xerrors.Errorf("getting address: %w", err)
-	}
-
-	err = resetMultisigVesting(ctx, store, tree, addr, 0, 0, big.Zero())
+	err = resetMultisigVesting(ctx, store, tree, builtin.SaftAddress, 0, 0, big.Zero())
 	if err != nil {
 		return cid.Undef, xerrors.Errorf("tweaking msig vesting: %w", err)
 	}
